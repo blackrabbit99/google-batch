@@ -45,5 +45,5 @@ The library used for sending batch requests for DRIVE API
 
 
 ```bash
-npm install google-drive-batch-requestsh --save
+npm install google-drive-batch-requests --save
 ```

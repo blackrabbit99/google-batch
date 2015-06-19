@@ -1,7 +1,8 @@
-var request 	= require('request');
+var request = require('request');
 var querystring = require('querystring');
-var parser 		= require('http-string-parser');
-var fs 			= require('fs');
+var parser = require('http-string-parser');
+var fs = require('fs');
+var maxBatchSize = 1000;
 
 function findToken(opts){
 	var token = null;
@@ -15,19 +16,29 @@ function findToken(opts){
 }
 
 function getMultipart(calls){
+
 	return calls.map(function (opts) {
 		opts.qs = opts.qs || { };
 		opts.json = opts.json || { } ;
+
 		var contentId = (opts.qs.contentId || opts.json.contentId || Math.floor(Math.random() * Date.now()));
+		var method = opts.method || 'GET';
+		var url = ' /drive/v2/files/' + opts.fileId;
+		var fileId = opts.fileId
+		delete opts.fileId;
+		var params = Object.keys(opts).length ? '?' + querystring.stringify(opts) : '';
+		opts.fileId = fileId;
 		var options = {
 			'Content-Type': 'application/http',
+			'Content-Transfer-Encoding': 'binary',
 			'Content-ID' : contentId,
-			'body' : 'GET ' + opts.url + (Object.keys(opts.qs).length ? '?' + querystring.stringify(opts.qs) : "") +  '\n'
+			'body' : method + url + params + '\n'
 		};
-		if(opts.method !== "GET"){
-			options.body +=  'Content-Type: application/json'  + '\n\n' +
-        	JSON.stringify(opts.json);	
+
+		if(method !== 'GET' && opts.body){
+			options.body +=  'Content-Type: application/json'  + '\n\n' + JSON.stringify(opts.body);	
 		}
+		
 		return options;
 	});
 }
@@ -56,7 +67,7 @@ function removeGarbage(initial, item){
 
 function clearCache(module){
 	if(require.resolve(module) && require.cache[require.resolve(module)]){
-    	try{ delete require.cache[require.resolve(module)] }catch(e){ }
+		try{ delete require.cache[require.resolve(module)] }catch(e){ }
 	}
 }
 
@@ -87,6 +98,10 @@ function GoogleBatch(){
 		return this;
 	}
 
+	this.isFull = function(){
+		return apiCalls.length >= maxBatchSize;
+	}
+
 	this.exec = function(callback){
 		if(!token){
 			token = findToken(apiCalls);
@@ -94,6 +109,9 @@ function GoogleBatch(){
 				return callback([Error('Auth Token not found')]);
 			}	
 		}
+
+		var multipart = getMultipart(apiCalls);
+		
 		var opts = {
 			url : 'https://www.googleapis.com/batch',
 			method : 'POST',
@@ -101,14 +119,17 @@ function GoogleBatch(){
 				'content-type': 'multipart/mixed',
 				'Authorization' : 'Bearer ' + token
 			},
-			multipart : getMultipart(apiCalls)
-		}
+			multipart : multipart
+		};
+
 		var req = request(opts);
+		
 		req.on('error', function (e) {
+			res.json(200, e);
 			return callback([e]);
 		});
-	    req.on('response', function (res) {
-	    	var boundary = res.headers['content-type'].split('boundary=');
+		req.on('response', function (res) {
+			var boundary = res.headers['content-type'].split('boundary=');
 			if(boundary.length < 2){
 				return callback([Error('Wrong content-type :' + res.headers['content-type'])]);
 			}
@@ -130,9 +151,9 @@ function GoogleBatch(){
 					return null;
 				});
 				callback(errors, responses);
-	      });
+		  });
 			
-	    });
+		});
 			
 	}
 }
@@ -140,16 +161,16 @@ function GoogleBatch(){
 GoogleBatch.require = function(moduleName){
 	if(moduleName === "googleapis"){
 		try{
-            var data = "module.exports = require('" + __dirname + "/transport.js');"
-            var existingGoogle = require.resolve(moduleName);
-            if(existingGoogle){
-                existingGoogle = existingGoogle.substr(0, existingGoogle.indexOf(moduleName)) + 'googleapis/lib/transporters.js';
-                fs.writeFileSync(existingGoogle, data);
-            }else{
-                throw Error('googleapis module not found');
-            }
-            clearCache('googleapis');
-        }catch(e){
+			var data = "module.exports = require('" + __dirname + "/transport.js');"
+			var existingGoogle = require.resolve(moduleName);
+			if(existingGoogle){
+				existingGoogle = existingGoogle.substr(0, existingGoogle.indexOf(moduleName)) + 'googleapis/lib/transporters.js';
+				fs.writeFileSync(existingGoogle, data);
+			}else{
+				throw Error('googleapis module not found');
+			}
+			clearCache('googleapis');
+		}catch(e){
 			var error = new Error('Error while patching googleapis');
 			error.stack = e.stack;
 			throw error;

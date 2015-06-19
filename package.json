@@ -1,14 +1,15 @@
 {
-  "name": "google-batch",
-  "version": "0.0.7",
-  "description": "Sends batch requests to Google REST API",
+  "name": "google-drive-batch-requests",
+  "version": "0.0.1",
+  "description": "Sends batch requests to Google Drive REST API",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pradeep-mishra/google-batch.git"
+    "url": "https://github.com/blackrabbit99/google-drive-batch-requests"
   },
   "keywords": [
     "batch",
     "google",
+    "google drive",
     "apis",
     "google-batch",
     "batch-google",
@@ -18,8 +19,8 @@
     "batch-call"
   ],
   "author": {
-    "name": "Pradeep Mishra",
-    "email": "pradeep23oct@gmail.com"
+    "name": "Artem Zakharchenko",
+    "email": "myzlio@gmail.com"
   },
   "licenses": "MIT",
   "dependencies": {

@@ -1,6 +1,6 @@
 {
   "name": "google-drive-batch-requests",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Sends batch requests to Google Drive REST API",
   "repository": {
     "type": "git",

@@ -35,7 +35,7 @@ The library used for sending batch requests for DRIVE API
 }
 ```
 
-google-drive-batch-requests
+Limited calls
 ==============
 You're limited to 1000 calls in a single batch request. If you need to make more calls than that, use multiple batch requests. But after investigation the most common number was 800. 
 

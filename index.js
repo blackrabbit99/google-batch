@@ -2,7 +2,6 @@ var request = require('request');
 var querystring = require('querystring');
 var parser = require('http-string-parser');
 var fs = require('fs');
-var maxBatchSize = 1000;
 
 function findToken(opts){
 	var token = null;
@@ -71,9 +70,10 @@ function clearCache(module){
 	}
 }
 
-function GoogleBatch(){
+function GoogleBatch(params){
 	var apiCalls = [ ];
 	var token = null;
+	this.maxBatchSize = params.maxBatchSize || 800;
 	this.setAuth = function(auth){
 		if(typeof(auth) === "string"){
 			token = auth;
@@ -99,7 +99,7 @@ function GoogleBatch(){
 	}
 
 	this.isFull = function(){
-		return apiCalls.length >= maxBatchSize;
+		return apiCalls.length >= this.maxBatchSize;
 	}
 
 	this.exec = function(callback){
